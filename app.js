@@ -39,7 +39,7 @@ function normalize(rows) {
   }));
 }
 
-// ===== copy =====
+// ===== COPY =====
 function copyText(val, btn) {
   if (!val) return;
 
@@ -49,6 +49,18 @@ function copyText(val, btn) {
       setTimeout(() => btn.textContent = "📋", 800);
     })
     .catch(() => alert(val));
+}
+
+// ===== CHIP UI =====
+function createChip(label, url) {
+  if (!url) return "";
+
+  return `
+<a class="chip" href="${url}" target="_blank">
+  <span class="kind">${label}</span>
+  <button class="copy" onclick="event.preventDefault();navigator.clipboard.writeText('${url}')">📋</button>
+</a>
+`;
 }
 
 // ===== render =====
@@ -84,11 +96,11 @@ function renderRows() {
 <td>${r.asn}</td>
 <td>${r.port}</td>
 
-<td>
-  ${r.links.ACCESS ? `<a href="${r.links.ACCESS}" target="_blank">ACCESS</a>` : ""}
-  ${r.links.JKT ? `<a href="${r.links.JKT}" target="_blank">JKT</a>` : ""}
-  ${r.links.ASEAN ? `<a href="${r.links.ASEAN}" target="_blank">ASEAN</a>` : ""}
-  ${r.links.MAPS ? `<a href="${r.links.MAPS}" target="_blank">MAPS</a>` : ""}
+<td class="links">
+  ${createChip("ACCESS", r.links.ACCESS)}
+  ${createChip("JKT", r.links.JKT)}
+  ${createChip("ASEAN", r.links.ASEAN)}
+  ${createChip("MAPS", r.links.MAPS)}
 </td>
 
 <td>${r.ip_jkt}</td>
@@ -96,12 +108,11 @@ function renderRows() {
 <td>${r.ip_maps}</td>
 `;
 
-    // copy buttons
+    // copy button IP
     [r.ip_jkt, r.ip_ase, r.ip_maps].forEach((ip, i) => {
       const btn = document.createElement("button");
       btn.textContent = "📋";
       btn.onclick = () => copyText(ip, btn);
-
       tr.children[i + 6].appendChild(btn);
     });
 
@@ -109,7 +120,46 @@ function renderRows() {
   });
 }
 
-// ===== import =====
+// ===== EXPORT CSV =====
+function exportCSV() {
+  if (!data.length) return alert("No data");
+
+  const headers = [
+    "No","Company","Brand / Other Name","ASN","Access Port",
+    "Access Port Zabbix Link","JKT Zabbix Link",
+    "ASEAN Zabbix Link","MAPS Zabbix Link",
+    "IP JKT","IP ASE","IP MAPS"
+  ];
+
+  const rows = data.map(r => [
+    r.no,
+    r.company,
+    r.brand,
+    r.asn,
+    r.port,
+    r.links.ACCESS,
+    r.links.JKT,
+    r.links.ASEAN,
+    r.links.MAPS,
+    r.ip_jkt,
+    r.ip_ase,
+    r.ip_maps
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(v => `"${v || ""}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ixnet-export.csv";
+  a.click();
+}
+
+// ===== IMPORT =====
 function handleImport(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -130,7 +180,7 @@ function handleImport(e) {
   });
 }
 
-// ===== local storage =====
+// ===== LOCAL =====
 function saveLocal() {
   localStorage.setItem("data", JSON.stringify(data));
   alert("Saved locally ✅");
@@ -138,13 +188,13 @@ function saveLocal() {
 
 function loadLocal() {
   const raw = localStorage.getItem("data");
-  if (!raw) return alert("No local data");
+  if (!raw) return alert("No data");
 
   data = JSON.parse(raw);
   renderRows();
 }
 
-// ===== init =====
+// ===== INIT =====
 window.addEventListener("DOMContentLoaded", () => {
 
   console.log("APP READY ✅");
@@ -155,7 +205,13 @@ window.addEventListener("DOMContentLoaded", () => {
   $("#btn-save-local").onclick = saveLocal;
   $("#btn-load-local").onclick = loadLocal;
 
-  // disable server (Pages static)
+  // optional: tambahin tombol export di HTML
+  if ($("#btn-export")) {
+    $("#btn-export").onclick = exportCSV;
+  }
+
+  // disable server
   $("#btn-save-server").onclick = () => alert("Server API tidak tersedia di Cloudflare Pages");
   $("#btn-load-server").onclick = () => alert("Server API tidak tersedia di Cloudflare Pages");
 });
+``
