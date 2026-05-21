@@ -4,7 +4,7 @@ const $ = (s) => document.querySelector(s);
 
 let data = [];
 
-// === FIX escape ===
+// ===== utils =====
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, '&')
@@ -12,38 +12,17 @@ function escapeHtml(s) {
     .replace(/>/g, '>');
 }
 
-// === COPY BUTTON ===
-function copyIpButton(ip) {
-  const b = document.createElement('button');
-  b.textContent = '📋';
-  b.onclick = () => {
-    if (!ip) return;
-    navigator.clipboard.writeText(ip)
-      .then(() => {
-        b.textContent = '✔';
-        setTimeout(() => b.textContent = '📋', 800);
-      });
-  };
-  return b;
+// ===== copy =====
+function copyText(val, btn) {
+  navigator.clipboard.writeText(val)
+    .then(() => {
+      btn.textContent = "✔";
+      setTimeout(() => btn.textContent = "📋", 800);
+    })
+    .catch(() => alert(val));
 }
 
-// === LINK CHIP ===
-function createLinkChip(name, url) {
-  const a = document.createElement('a');
-  if (url) {
-    a.href = url;
-    a.target = "_blank";
-  } else {
-    a.className = "chip disabled";
-    return a;
-  }
-
-  a.className = "chip";
-  a.textContent = name;
-  return a;
-}
-
-// === RENDER SIMPLE ===
+// ===== render =====
 function renderRows() {
   const tbody = document.querySelector("#tbl tbody");
   tbody.innerHTML = "";
@@ -52,24 +31,31 @@ function renderRows() {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-<td>${r.company}</td>
-<td>${r.asn}</td>
+<td>${r.company || ''}</td>
+<td>${r.asn || ''}</td>
 <td>${r.ip_jkt || ''}</td>
 <td>${r.ip_ase || ''}</td>
 <td>${r.ip_maps || ''}</td>
 `;
 
-    // add copy button
-    tr.children[2].appendChild(copyIpButton(r.ip_jkt));
-    tr.children[3].appendChild(copyIpButton(r.ip_ase));
-    tr.children[4].appendChild(copyIpButton(r.ip_maps));
+    // copy buttons
+    [r.ip_jkt, r.ip_ase, r.ip_maps].forEach((ip, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = "📋";
+      btn.onclick = () => copyText(ip, btn);
+      tr.children[i + 2].appendChild(btn);
+    });
 
     tbody.appendChild(tr);
   });
 }
 
-// === INIT ===
-window.addEventListener("DOMContentLoaded", () => {
-  console.log("JS OK ✅");
-});
-``
+// ===== CSV =====
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const header = lines.shift().split(',');
+
+  return lines.map(line => {
+    const cols = line.split(',');
+    let obj = {};
+    header.forEach((h, i) => obj[h.trim()] = cols[i]?.trim());
