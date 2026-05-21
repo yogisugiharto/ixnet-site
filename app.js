@@ -39,7 +39,7 @@ function normalize(rows) {
   }));
 }
 
-// ===== COPY =====
+// ===== copy IP =====
 function copyText(val, btn) {
   if (!val) return;
 
@@ -51,14 +51,22 @@ function copyText(val, btn) {
     .catch(() => alert(val));
 }
 
-// ===== CHIP UI =====
+// ===== CHIP UI FINAL =====
 function createChip(label, url) {
-  if (!url) return "";
 
-  return `
-<a class="chip" href="${url}" target="_blank">
+  // ✅ disable jika kosong atau "-"
+  if (!url || url.trim() === "" || url.trim() === "-") {
+    return `
+<span class="chip disabled">
   <span class="kind">${label}</span>
-  <button class="copy" onclick="event.preventDefault();navigator.clipboard.writeText('${url}')">📋</button>
+</span>
+`;
+  }
+
+  // ✅ normal clickable chip
+  return `
+<a href="${url}" target="_blank" class="chip">
+  <span class="kind">${label}</span>
 </a>
 `;
 }
@@ -108,7 +116,7 @@ function renderRows() {
 <td>${r.ip_maps}</td>
 `;
 
-    // copy button IP
+    // ✅ copy IP tetap ada
     [r.ip_jkt, r.ip_ase, r.ip_maps].forEach((ip, i) => {
       const btn = document.createElement("button");
       btn.textContent = "📋";
@@ -120,7 +128,7 @@ function renderRows() {
   });
 }
 
-// ===== EXPORT CSV =====
+// ===== export CSV =====
 function exportCSV() {
   if (!data.length) return alert("No data");
 
@@ -159,7 +167,7 @@ function exportCSV() {
   a.click();
 }
 
-// ===== IMPORT =====
+// ===== import =====
 function handleImport(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -180,7 +188,7 @@ function handleImport(e) {
   });
 }
 
-// ===== LOCAL =====
+// ===== local storage =====
 function saveLocal() {
   localStorage.setItem("data", JSON.stringify(data));
   alert("Saved locally ✅");
@@ -188,13 +196,13 @@ function saveLocal() {
 
 function loadLocal() {
   const raw = localStorage.getItem("data");
-  if (!raw) return alert("No data");
+  if (!raw) return alert("No local data");
 
   data = JSON.parse(raw);
   renderRows();
 }
 
-// ===== INIT =====
+// ===== init =====
 window.addEventListener("DOMContentLoaded", () => {
 
   console.log("APP READY ✅");
@@ -205,13 +213,8 @@ window.addEventListener("DOMContentLoaded", () => {
   $("#btn-save-local").onclick = saveLocal;
   $("#btn-load-local").onclick = loadLocal;
 
-  // optional: tambahin tombol export di HTML
-  if ($("#btn-export")) {
-    $("#btn-export").onclick = exportCSV;
-  }
+  $("#btn-export") && ($("#btn-export").onclick = exportCSV);
 
-  // disable server
   $("#btn-save-server").onclick = () => alert("Server API tidak tersedia di Cloudflare Pages");
   $("#btn-load-server").onclick = () => alert("Server API tidak tersedia di Cloudflare Pages");
 });
-``
